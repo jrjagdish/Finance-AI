@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 from app.models.mixins import UUIDPkMixin, TenantMixin, TimestampMixin
 
-MATCH_TYPES = ("exact", "reference", "amount_tolerance", "date_window", "one_to_many", "ai_suggested")
+MATCH_TYPES = ("exact", "reference", "amount_tolerance", "date_window", "one_to_many", "ai_suggested", "manual")
 MATCHED_BY = ("rule", "ai", "human")
 
 

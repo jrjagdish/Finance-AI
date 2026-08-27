@@ -37,5 +37,20 @@ services:
       redis:
         condition: service_started
 
+  worker:
+    build: .
+    command: celery -A app.celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      DATABASE_URL: postgresql+psycopg2://finance:finance@db:5432/finance_ai
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_DIR: /app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
 volumes:
   pgdata:

@@ -15,5 +15,16 @@ class Settings(BaseSettings):
     # No auth in v1 — every record is written under this single tenant.
     default_tenant_id: str = "default"
 
+    # Deterministic matching engine defaults (overridable per-tenant via matching_rules).
+    default_amount_tolerance: float = 1.0
+    default_date_window_days: int = 3
+    max_aggregation_group_size: int = 4
+
+    # Groq / LLM (AI exception resolver) — left unset until the user provides a key.
+    groq_api_key: str | None = None
+    groq_model: str = "llama-3.3-70b-versatile"
+    ai_high_confidence: float = 0.85
+    ai_medium_confidence: float = 0.5
+
 
 settings = Settings()
