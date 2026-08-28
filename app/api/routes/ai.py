@@ -1,15 +1,15 @@
 import uuid
 
+import inngest
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.celery_app import celery_app
 from app.db.session import get_db
+from app.inngest_client import inngest_client
 from app.models.exception import Exception_
 from app.models.ingestion_batch import IngestionBatch
-from app.schemas.ai import AIJobStatus, AIResolveResponse
+from app.schemas.ai import AIResolveResponse
 from app.schemas.exceptions import ExceptionOut, FeedbackIn
-from app.tasks.ai_resolve import resolve_exceptions_with_ai_task
 from app.models.audit_log import MatchAuditLog
 
 router = APIRouter(prefix="/ai", tags=["ai-resolver"])
@@ -21,18 +21,10 @@ def trigger_ai_resolve(batch_id: uuid.UUID, db: Session = Depends(get_db)):
     if batch is None:
         raise HTTPException(status_code=404, detail="Batch not found")
 
-    async_result = resolve_exceptions_with_ai_task.delay(str(batch_id))
-    return AIResolveResponse(batch_id=batch_id, task_id=async_result.id)
-
-
-@router.get("/resolve/status/{job_id}", response_model=AIJobStatus)
-def ai_resolve_status(job_id: str):
-    result = celery_app.AsyncResult(job_id)
-    return AIJobStatus(
-        job_id=job_id,
-        state=result.state,
-        result=result.result if result.successful() else None,
+    event_ids = inngest_client.send_sync(
+        inngest.Event(name="finance/exceptions.ai_resolve", data={"batch_id": str(batch_id)})
     )
+    return AIResolveResponse(batch_id=batch_id, task_id=event_ids[0] if event_ids else None)
 
 
 @router.get("/suggestions", response_model=list[ExceptionOut])

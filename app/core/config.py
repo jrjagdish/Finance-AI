@@ -8,7 +8,6 @@ class Settings(BaseSettings):
     debug: bool = True
 
     database_url: str = "postgresql+psycopg2://finance:finance@localhost:5432/finance_ai"
-    redis_url: str = "redis://localhost:6379/0"
 
     storage_dir: str = "./storage"
 
@@ -22,7 +21,7 @@ class Settings(BaseSettings):
 
     # Groq / LLM (AI exception resolver) — left unset until the user provides a key.
     groq_api_key: str | None = None
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "openai/gpt-oss-120b"
     ai_high_confidence: float = 0.85
     ai_medium_confidence: float = 0.5
 

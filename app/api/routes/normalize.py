@@ -1,13 +1,14 @@
 import uuid
 
+import inngest
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.inngest_client import inngest_client
 from app.models.ingestion_batch import IngestionBatch
 from app.models.normalized_record import NormalizedRecord
 from app.schemas.records import NormalizedRecordOut, NormalizeRunResponse, NormalizeStatusResponse
-from app.tasks.normalize import normalize_batch_task
 
 router = APIRouter(tags=["normalization"])
 
@@ -18,8 +19,10 @@ def run_normalization(batch_id: uuid.UUID, db: Session = Depends(get_db)):
     if batch is None:
         raise HTTPException(status_code=404, detail="Batch not found")
 
-    async_result = normalize_batch_task.delay(str(batch_id))
-    return NormalizeRunResponse(batch_id=batch_id, task_id=async_result.id, status="queued")
+    event_ids = inngest_client.send_sync(
+        inngest.Event(name="finance/batch.normalize", data={"batch_id": str(batch_id)})
+    )
+    return NormalizeRunResponse(batch_id=batch_id, task_id=event_ids[0] if event_ids else None, status="queued")
 
 
 @router.get("/normalize/status/{batch_id}", response_model=NormalizeStatusResponse)

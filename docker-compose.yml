@@ -15,42 +15,32 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-
   api:
     build: .
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app
     volumes:
       - .:/app
     ports:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql+psycopg2://finance:finance@db:5432/finance_ai
-      REDIS_URL: redis://redis:6379/0
       STORAGE_DIR: /app/storage
+      INNGEST_DEV: "1"
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_started
 
-  worker:
-    build: .
-    command: celery -A app.celery_app worker --loglevel=info
-    volumes:
-      - .:/app
-    environment:
-      DATABASE_URL: postgresql+psycopg2://finance:finance@db:5432/finance_ai
-      REDIS_URL: redis://redis:6379/0
-      STORAGE_DIR: /app/storage
+  # Local stand-in for Inngest Cloud: receives triggered events and calls back into
+  # the api container's /api/inngest endpoint to run normalize/ai-resolve functions.
+  # Dashboard at http://localhost:8288. Not needed in production — Inngest Cloud
+  # replaces it once INNGEST_EVENT_KEY/INNGEST_SIGNING_KEY are set there instead.
+  inngest:
+    image: inngest/inngest:latest
+    command: inngest dev -u http://api:8000/api/inngest --host 0.0.0.0
+    ports:
+      - "8288:8288"
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
+      - api
 
 volumes:
   pgdata:
