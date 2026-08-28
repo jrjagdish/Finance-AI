@@ -239,3 +239,38 @@ input, select {
 .banner.ok { background: var(--ok-bg); color: var(--ok-text); }
 .banner.error { background: #fdeceb; color: var(--danger); }
 .banner.hidden { display: none; }
+
+.banner.processing {
+  top: 60px;
+  background: #eef0fb;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(67, 56, 202, 0.25);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  flex: none;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* pill() strips non-letters from the status text, so "ai_resolving" -> "airesolving" */
+.pill.normalizing, .pill.matching, .pill.airesolving, .pill.ingesting, .pill.pending {
+  background: #eef0fb;
+  color: var(--primary);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}

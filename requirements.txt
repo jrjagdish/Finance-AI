@@ -3,12 +3,11 @@ uvicorn[standard]==0.32.1
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.10
 alembic==1.14.0
-pydantic==2.10.3
+pydantic==2.13.4
 pydantic-settings==2.6.1
 python-dotenv==1.0.1
 python-multipart==0.0.12
-celery==5.4.0
-redis==5.2.0
+inngest==0.5.19
 pandas==2.2.3
 python-dateutil==2.9.0.post0
 langchain-core==0.3.28

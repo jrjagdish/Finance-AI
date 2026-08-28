@@ -47,6 +47,84 @@ function pill(text) {
   return `<span class="pill ${cls}">${text}</span>`;
 }
 
+// ---------- background job progress ----------
+// The heavy work (normalize, AI resolve) now runs as an Inngest background job
+// rather than blocking the request, so we poll the batch's status and keep the
+// user informed — in particular while the AI resolver is mid-flight calling Groq.
+
+const STATUS_MESSAGES = {
+  pending: "Queued…",
+  ingesting: "Ingesting file…",
+  normalizing: "Normalizing records…",
+  matching: "Running matching engine…",
+  ai_resolving: "🤖 Calling the AI (Groq) to resolve unmatched exceptions…",
+};
+
+function showProcessing(message) {
+  const el = $("processing-banner");
+  $("processing-text").textContent = message;
+  el.className = "banner processing";
+}
+
+function hideProcessing() {
+  $("processing-banner").className = "banner processing hidden";
+}
+
+const POLL_INTERVAL_MS = 1200;
+const POLL_TIMEOUT_MS = 90000; // give up after ~90s of no terminal status
+
+// Only one poll loop should ever drive the (single, shared) processing banner. Each
+// call gets a token; a poll tick only acts if it's still the latest one requested,
+// so clicking Normalize/AI-Resolve again (same batch or a different one) cleanly
+// supersedes any earlier loop instead of both fighting over the banner forever.
+let activePollToken = 0;
+
+// Polls GET /ingest/batches/{batchId} until the batch leaves the given "in-flight"
+// statuses, updating the processing banner with a status-specific message throughout.
+function pollBatchStatus(batchId, { onDone } = {}) {
+  const token = ++activePollToken;
+  const startedAt = Date.now();
+
+  const poll = async () => {
+    if (token !== activePollToken) return; // superseded by a newer poll
+
+    let batch;
+    try {
+      batch = await api(`/ingest/batches/${batchId}`);
+    } catch (err) {
+      if (token !== activePollToken) return;
+      hideProcessing();
+      showBanner("Lost track of batch status: " + err.message, true);
+      return;
+    }
+
+    if (token !== activePollToken) return;
+
+    if (batch.status === "completed") {
+      hideProcessing();
+      showBanner("Done — batch is up to date");
+      onDone && onDone(batch);
+      return;
+    }
+    if (batch.status === "failed") {
+      hideProcessing();
+      showBanner("Batch processing failed — check server logs", true);
+      onDone && onDone(batch);
+      return;
+    }
+
+    if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
+      hideProcessing();
+      showBanner("Still processing after 90s — refresh to keep checking", true);
+      return;
+    }
+
+    showProcessing(STATUS_MESSAGES[batch.status] || `Processing (${batch.status})…`);
+    setTimeout(poll, POLL_INTERVAL_MS);
+  };
+  poll();
+}
+
 // ---------- tab navigation ----------
 
 document.querySelectorAll(".tab-btn").forEach((btn) => {
@@ -138,8 +216,8 @@ function batchRow(b) {
 
 async function runNormalize(batchId) {
   try {
-    const r = await api(`/normalize/run/${batchId}`, { method: "POST" });
-    showBanner(`Normalization queued (task ${shortId(r.task_id)})`);
+    await api(`/normalize/run/${batchId}`, { method: "POST" });
+    pollBatchStatus(batchId, { onDone: loadBatches });
   } catch (err) {
     showBanner("Normalize failed: " + err.message, true);
   }
@@ -157,8 +235,13 @@ async function runMatch(batchId) {
 
 async function runAiResolve(batchId) {
   try {
-    const r = await api(`/ai/resolve/${batchId}`, { method: "POST" });
-    showBanner(`AI resolution queued (task ${shortId(r.task_id)})`);
+    await api(`/ai/resolve/${batchId}`, { method: "POST" });
+    pollBatchStatus(batchId, {
+      onDone: () => {
+        loadBatches();
+        loadExceptions();
+      },
+    });
   } catch (err) {
     showBanner("AI resolve failed: " + err.message, true);
   }

@@ -9,12 +9,6 @@ class AIResolveResponse(BaseModel):
     task_id: str
 
 
-class AIJobStatus(BaseModel):
-    job_id: str
-    state: str
-    result: dict | None = None
-
-
 class LLMCallOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

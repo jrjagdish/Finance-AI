@@ -13,7 +13,7 @@ v1 runs single-tenant, unauthenticated, against a `"default"` tenant.
 - PostgreSQL schema via SQLAlchemy models (`app/models/`) covering ingestion batches, raw records,
   entities, normalized records, matches, exceptions, matching rules, audit log, LLM call log
 - Alembic migrations wired up
-- Docker Compose for Postgres + Redis + the API
+- Docker Compose for Postgres + the API + a local Inngest Dev Server (background jobs)
 - `GET /health` endpoint (checks DB connectivity)
 
 ## Local setup
@@ -34,7 +34,9 @@ python -m venv .venv
 pip install -r requirements.txt
 
 cp .env.example .env
-# start Postgres + Redis yourself, or: docker compose up db redis
+# start Postgres yourself, or: docker compose up db
+# start the Inngest dev server (needed for /normalize/run and /ai/resolve to execute):
+#   inngest dev -u http://localhost:8000/api/inngest
 
 alembic upgrade head
 uvicorn app.main:app --reload
