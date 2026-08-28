@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Finance Controller</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">AI Finance Controller</div>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+    <button class="tab-btn" data-tab="ingestion">Ingestion</button>
+    <button class="tab-btn" data-tab="records">Records</button>
+    <button class="tab-btn" data-tab="exceptions">Exceptions</button>
+    <button class="tab-btn" data-tab="reports">Reports</button>
+    <button class="tab-btn" data-tab="dev">Dev Tools</button>
+  </nav>
+</header>
+
+<div id="banner" class="banner hidden"></div>
+
+<main class="container">
+
+  <!-- Dashboard -->
+  <section id="tab-dashboard" class="tab-panel active">
+    <div class="panel-head">
+      <h2>Reconciliation Summary</h2>
+      <button class="btn" onclick="loadDashboard()">Refresh</button>
+    </div>
+
+    <div class="cards" id="summary-cards">
+      <div class="card"><span class="card-label">Total Records</span><span class="card-value" id="sum-total">–</span></div>
+      <div class="card"><span class="card-label">Auto-Matched</span><span class="card-value" id="sum-matched">–</span></div>
+      <div class="card highlight"><span class="card-label">Match Rate</span><span class="card-value" id="sum-rate">–</span></div>
+      <div class="card"><span class="card-label">AI Suggested</span><span class="card-value" id="sum-ai">–</span></div>
+      <div class="card warn"><span class="card-label">Unresolved</span><span class="card-value" id="sum-unresolved">–</span></div>
+      <div class="card warn"><span class="card-label">Needs Review</span><span class="card-value" id="sum-review">–</span></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="box">
+        <h3>Performance by Source</h3>
+        <table>
+          <thead><tr><th>Source</th><th>Total</th><th>Matched</th><th>Rate</th></tr></thead>
+          <tbody id="perf-body"><tr><td colspan="4" class="empty">No data yet</td></tr></tbody>
+        </table>
+      </div>
+      <div class="box">
+        <h3>Top Reason Codes</h3>
+        <table>
+          <thead><tr><th>Reason Code</th><th>Count</th></tr></thead>
+          <tbody id="reason-body"><tr><td colspan="2" class="empty">No data yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ingestion -->
+  <section id="tab-ingestion" class="tab-panel">
+    <div class="panel-head">
+      <h2>Ingestion</h2>
+      <button class="btn" onclick="loadBatches()">Refresh Batches</button>
+    </div>
+
+    <form class="box" id="upload-form">
+      <h3>Upload CSV</h3>
+      <div class="form-row">
+        <label>Source Type
+          <select id="upload-source-type">
+            <option value="ledger">ledger</option>
+            <option value="bank">bank</option>
+            <option value="gateway">gateway</option>
+            <option value="master">master</option>
+          </select>
+        </label>
+        <label>CSV File
+          <input type="file" id="upload-file" accept=".csv" required />
+        </label>
+        <button type="submit" class="btn primary">Upload</button>
+      </div>
+    </form>
+
+    <div class="box">
+      <h3>Batches</h3>
+      <table>
+        <thead>
+          <tr><th>Source</th><th>File</th><th>Status</th><th>Records</th><th>Created</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="batches-body"><tr><td colspan="6" class="empty">No batches yet</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Records -->
+  <section id="tab-records" class="tab-panel">
+    <div class="panel-head">
+      <h2>Normalized Records</h2>
+      <button class="btn" onclick="loadRecords()">Refresh</button>
+    </div>
+
+    <div class="box filters">
+      <label>Source
+        <select id="rec-filter-source">
+          <option value="">all</option>
+          <option value="ledger">ledger</option>
+          <option value="bank">bank</option>
+          <option value="gateway">gateway</option>
+        </select>
+      </label>
+      <label>Status
+        <select id="rec-filter-status">
+          <option value="">all</option>
+          <option value="unmatched">unmatched</option>
+          <option value="matched">matched</option>
+          <option value="ai_suggested">ai_suggested</option>
+          <option value="exception">exception</option>
+        </select>
+      </label>
+      <button class="btn" onclick="loadRecords()">Apply</button>
+    </div>
+
+    <div class="box">
+      <table>
+        <thead>
+          <tr><th>Source</th><th>Txn ID</th><th>Reference</th><th>Amount</th><th>Date</th><th>Narration</th><th>Status</th></tr>
+        </thead>
+        <tbody id="records-body"><tr><td colspan="7" class="empty">No records yet</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Exceptions -->
+  <section id="tab-exceptions" class="tab-panel">
+    <div class="panel-head">
+      <h2>Exception Review</h2>
+      <button class="btn" onclick="loadExceptions()">Refresh</button>
+    </div>
+
+    <div class="box filters">
+      <label>Status
+        <select id="exc-filter-status">
+          <option value="open">open</option>
+          <option value="approved">approved</option>
+          <option value="rejected">rejected</option>
+          <option value="edited">edited</option>
+          <option value="resolved">resolved</option>
+          <option value="">all</option>
+        </select>
+      </label>
+      <label>Reviewer ID
+        <input type="text" id="exc-reviewer-id" placeholder="e.g. sunil" value="sunil" />
+      </label>
+      <button class="btn" onclick="loadExceptions()">Apply</button>
+    </div>
+
+    <div class="box">
+      <table>
+        <thead>
+          <tr><th>Reason</th><th>Tier</th><th>Explanation</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="exceptions-body"><tr><td colspan="5" class="empty">No exceptions yet</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Reports -->
+  <section id="tab-reports" class="tab-panel">
+    <div class="panel-head">
+      <h2>Reports</h2>
+    </div>
+
+    <div class="box">
+      <h3>Export</h3>
+      <div class="form-row">
+        <label>Report
+          <select id="report-type">
+            <option value="reconciliation-summary">Reconciliation Summary</option>
+            <option value="exception-report">Exception Report</option>
+            <option value="audit-trail">Audit Trail</option>
+          </select>
+        </label>
+        <label>Format
+          <select id="report-format">
+            <option value="csv">CSV</option>
+            <option value="xlsx">XLSX</option>
+            <option value="pdf">PDF</option>
+          </select>
+        </label>
+        <button class="btn primary" onclick="downloadReport()">Download</button>
+        <button class="btn" onclick="previewReport()">Preview JSON</button>
+      </div>
+    </div>
+
+    <div class="box">
+      <h3>Preview</h3>
+      <pre id="report-preview" class="preview">Nothing loaded yet.</pre>
+    </div>
+  </section>
+
+  <!-- Dev Tools -->
+  <section id="tab-dev" class="tab-panel">
+    <div class="panel-head">
+      <h2>Dev Tools</h2>
+    </div>
+
+    <div class="box">
+      <h3>Generate Synthetic Data</h3>
+      <p class="hint">Creates a ledger batch + a bank batch with controlled edge cases (exact matches, fee deductions, missing references, aggregated deposits, duplicates, unknown counterparties).</p>
+      <div class="form-row">
+        <label>Total Records
+          <input type="number" id="dev-total" value="100" min="50" max="500" />
+        </label>
+        <label>Seed (optional)
+          <input type="number" id="dev-seed" placeholder="random" />
+        </label>
+        <button class="btn primary" onclick="generateSyntheticData()">Generate</button>
+      </div>
+      <pre id="dev-result" class="preview">Nothing generated yet.</pre>
+    </div>
+  </section>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
