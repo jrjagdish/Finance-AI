@@ -61,13 +61,20 @@ const STATUS_MESSAGES = {
 };
 
 function showProcessing(message) {
-  const el = $("processing-banner");
-  $("processing-text").textContent = message;
-  el.className = "banner processing";
+  const el = document.getElementById("processing-banner");
+
+  console.log("SHOW PROCESSING");
+
+  el.style.display = "flex";
+  document.getElementById("processing-text").textContent = message;
 }
 
 function hideProcessing() {
-  $("processing-banner").className = "banner processing hidden";
+  const el = document.getElementById("processing-banner");
+
+  console.log("HIDE PROCESSING");
+
+  el.style.display = "none";
 }
 
 const POLL_INTERVAL_MS = 1200;
@@ -214,7 +221,18 @@ function batchRow(b) {
   </tr>`;
 }
 
+function showProcessing(message) {
+  const el = $("processing-banner");
+  $("processing-text").textContent = message;
+  el.className = "banner processing";
+}
+
+function hideProcessing() {
+  $("processing-banner").className = "banner processing hidden";
+}
+
 async function runNormalize(batchId) {
+  showProcessing("Normalization is running in the background. Please wait...");
   try {
     await api(`/normalize/run/${batchId}`, { method: "POST" });
     pollBatchStatus(batchId, { onDone: loadBatches });
@@ -224,6 +242,7 @@ async function runNormalize(batchId) {
 }
 
 async function runMatch(batchId) {
+  showProcessing("Matching is running in the background. Please wait...");
   try {
     const r = await api(`/match/run/${batchId}`, { method: "POST" });
     showBanner("Matching complete: " + JSON.stringify(r.counts));
@@ -234,6 +253,8 @@ async function runMatch(batchId) {
 }
 
 async function runAiResolve(batchId) {
+  showProcessing("AI resolution is running in the background. Please wait...");
+
   try {
     await api(`/ai/resolve/${batchId}`, { method: "POST" });
     pollBatchStatus(batchId, {
