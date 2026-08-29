@@ -11,6 +11,12 @@ class Settings(BaseSettings):
 
     storage_dir: str = "./storage"
 
+    # Cloudinary (raw file archive for uploaded CSVs) — left unset to run with
+    # archiving disabled; the parsed rows already land in the DB either way.
+    cloudinary_cloud_name: str | None = None
+    cloudinary_api_key: str | None = None
+    cloudinary_api_secret: str | None = None
+
     # No auth in v1 — every record is written under this single tenant.
     default_tenant_id: str = "default"
 
